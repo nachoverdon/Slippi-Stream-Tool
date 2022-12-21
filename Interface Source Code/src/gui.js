@@ -46,8 +46,102 @@ const roundInp = document.getElementById('roundName');
 
 const forceWL = document.getElementById('forceWLToggle');
 
+function readDataFromFile() {
+    const scoreboardJson = getJson("ScoreboardInfo");
+    
+    if (scoreboardJson.p1WL !== "Nada" || scoreboardJson.p2WL !== "Nada") {
+        forceWL.checked = true;
+        forceWLtoggles();
+    }
+
+    // p1
+    p1NameInp.value = scoreboardJson.p1Name;
+    p1TagInp.value = scoreboardJson.p1Team;
+    charP1 = scoreboardJson.p1Character;
+    skinP1 = scoreboardJson.p1Skin;
+    colorP1 = scoreboardJson.p1Color;
+    p1Score = scoreboardJson.p1Score;
+    
+    
+    if (p1Score > 0) {
+        p1Win1.checked = true;
+    }
+    
+    if (p1Score > 1) {
+        p1Win2.checked = true;
+    }
+
+    if (p1Score > 2) {
+        p1Win3.checked = true;
+    }
+
+    currentP1WL = scoreboardJson.p1WL;
+
+    if (currentP1WL == "W") {
+        p1W.checked = true;
+        p1L.checked = false;
+    } else if (currentP1WL == "L") {
+        p1L.checked = true;
+        p1W.checked = false;
+    } else {
+        p1W.checked = false;
+        p1L.checked = false;
+    }
+
+    // p2
+    p2NameInp.value = scoreboardJson.p2Name;
+    p2TagInp.value = scoreboardJson.p2Team;
+    charP2 = scoreboardJson.p2Character;
+    skinP2 = scoreboardJson.p2Skin;
+    colorP2 = scoreboardJson.p2Color;
+    p2Score = scoreboardJson.p2Score;
+
+    if (p2Score > 0) {
+        p2Win1.checked = true;
+    }
+    
+    if (p2Score > 1) {
+        p2Win2.checked = true;
+    }
+
+    if (p2Score > 2) {
+        p2Win3.checked = true;
+    }
+
+    currentP2WL = scoreboardJson.p2WL;
+
+    if (currentP2WL == "W") {
+        p1W.checked = true;
+        p1L.checked = false;
+    } else if (currentP2WL == "L") {
+        p1L.checked = true;
+        p1W.checked = false;
+    } else {
+        p1W.checked = false;
+        p1L.checked = false;
+    }
+
+    currentBestOf = scoreboardJson.bestOf;
+
+    roundInp.value = scoreboardJson.round;
+    tournamentName.value = scoreboardJson.tournamentName;
+    cName1.value = scoreboardJson.caster1Name;
+    cTwitter1.value = scoreboardJson.caster1Twitter;
+    cTwitch1.value = scoreboardJson.caster1Twitch;
+    cName2.value = scoreboardJson.caster2Name;
+    cTwitter2.value = scoreboardJson.caster2Twitter;
+    cTwitch2.value = scoreboardJson.caster2Twitch;
+
+    allowIntro.checked = scoreboardJson.allowIntro;
+}
 
 function init() {
+    // attempt to read previous data if available
+    try {
+        readDataFromFile();
+    } catch (e) {
+        console.error(e);
+    }
 
     //first, add listeners for the bottom bar buttons
     document.getElementById('updateRegion').addEventListener("click", writeScoreboard);
@@ -80,8 +174,10 @@ function init() {
     document.getElementById('charRoster').addEventListener("click", hideChars);
 
     //update the character image (to random)
-    charImgChange(charImgP1, "Random");
-    charImgChange(charImgP2, "Random");
+    changeCharacterManual(charP1 || "Random", 1, skinP1);
+    changeCharacterManual(charP2 || "Random", 2, skinP2);
+    updateColor(1);
+    updateColor(2);
 
     //check whenever an image isnt found so we replace it with a "?"
     document.getElementById('p1CharImg').addEventListener("error", () => {
@@ -242,13 +338,15 @@ function loadColors(pNum) {
     colorP2 = "Blue";
 }
 
-function updateColor() {
+function updateColor(pName = 1) {
 
-    let pNum; //you've seen this one enough already, right?
-    if (this.parentElement.parentElement == document.getElementById("p1Color")) {
-        pNum = 1;
-    } else {
-        pNum = 2;
+    //you've seen this one enough already, right?
+    try {
+        if (this.parentElement.parentElement == document.getElementById("p2Color")) {
+            pNum = 2;
+        }
+    } catch (ignore) {
+        // not UI event
     }
 
     let clickedColor = this.textContent;
@@ -288,7 +386,11 @@ function updateColor() {
     }
 
     //remove focus from the menu so it hides on click
-    this.parentElement.parentElement.blur();
+    try {
+        this.parentElement.parentElement.blur();
+    } catch (ignore) {
+        // not UI event
+    }
 }
 
 
@@ -380,18 +482,20 @@ function changeCharacter() {
     }
 }
 //same as above but for the swap button
-function changeCharacterManual(char, pNum) {
+function changeCharacterManual(char, pNum, skin = "Default") {
     document.getElementById('p'+pNum+'CharSelector').setAttribute('src', charPath + '/CSS/'+char+'.png');
     if (pNum == 1) {
         charP1 = char;
-        skinP1 = "Default";
-        charImgChange(charImgP1, char);
+        skinP1 = skin;
+        charImgChange(charImgP1, char, skin);
         addSkinIcons(1);
+        changeSkinP1(null, skin);
     } else {
         charP2 = char;
-        skinP2 = "Default";
-        charImgChange(charImgP2, char);
+        skinP2 = skin;
+        charImgChange(charImgP2, char, skin);
         addSkinIcons(2);
+        changeSkinP2(null, skin);
     }
 }
 //also called when we click those images
@@ -478,12 +582,12 @@ function addSkinIcons(pNum) {
     }
 }
 //whenever clicking on the skin images
-function changeSkinP1() {
-    skinP1 = this.id;
+function changeSkinP1(ev, skin) {
+    skinP1 = skin || this.id;
     charImgChange(charImgP1, charP1, skinP1);
 }
-function changeSkinP2() {
-    skinP2 = this.id;
+function changeSkinP2(ev, skin) {
+    skinP2 = skin || this.id;
     charImgChange(charImgP2, charP2, skinP2);
 }
 
