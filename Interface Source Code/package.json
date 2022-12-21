@@ -1,8 +1,8 @@
 {
-  "name": "melee-st-gui",
-  "productName": "Melee ST",
+  "name": "slippi-st-gui",
+  "productName": "Slippi ST",
   "version": "1.0.0",
-  "description": "An electron interface for Melee tournament streams.",
+  "description": "An electron interface for Melee tournament streams using Slippi.",
   "main": "src/index.js",
   "scripts": {
     "start": "electron-forge start",
